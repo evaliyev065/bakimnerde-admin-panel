@@ -1,10 +1,21 @@
-import { Building2, FileBarChart, Gauge, Settings2, Tags, Wrench } from "lucide-react";
+import {
+  BadgeDollarSign,
+  Building2,
+  Gauge,
+  Handshake,
+  Settings2,
+  ScrollText,
+  WalletCards,
+  Wrench,
+} from "lucide-react";
 
 export const navigation = [
   { label: "Genel bakış", to: "/", icon: Gauge },
-  { label: "İş emirleri", to: "/is-emirleri", icon: Wrench, badge: "18" },
-  { label: "Kuruluşlar", to: "/kuruluslar", icon: Building2 },
-  { label: "Raporlar", to: "/raporlar", icon: FileBarChart },
-  { label: "Tarifeler", to: "/tarifeler", icon: Tags },
-  { label: "Ayarlar", to: "/ayarlar", icon: Settings2 }
+  { label: "İşler", to: "/isler", icon: Wrench, badge: "18" },
+  { label: "Taşeron firmalar", to: "/taseronlar", icon: Handshake },
+  { label: "CPO firmalar", to: "/cpo-firmalar", icon: Building2 },
+  { label: "Fiyat yönetimi", to: "/fiyatlar", icon: BadgeDollarSign },
+  { label: "Bakiye & hak ediş", to: "/bakiyeler", icon: WalletCards },
+  { label: "Denetim kayıtları", to: "/denetim-kayitlari", icon: ScrollText },
+  { label: "Yetki & tenant", to: "/ayarlar", icon: Settings2 },
 ] as const;

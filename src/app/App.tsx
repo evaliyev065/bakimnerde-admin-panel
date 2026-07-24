@@ -1,20 +1,41 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../layouts/AppShell";
+import { BalancesPage } from "../pages/BalancesPage";
+import { CompaniesPage } from "../pages/CompaniesPage";
 import { DashboardPage } from "../pages/DashboardPage";
-import { PlaceholderPage } from "../pages/PlaceholderPage";
+import { AuditLogsPage } from "../pages/AuditLogsPage";
+import { JobsPage } from "../pages/JobsPage";
+import { LoginPage } from "../pages/LoginPage";
+import { PricingPage } from "../pages/PricingPage";
+import { SettingsPage } from "../pages/SettingsPage";
 
 export function App() {
   return (
     <Routes>
-      <Route element={<AppShell />}>
+      <Route path="giris" element={<LoginPage />} />
+      <Route element={<RequireAuth />}>
         <Route index element={<DashboardPage />} />
-        <Route path="is-emirleri" element={<PlaceholderPage title="İş emirleri" description="Tüm bakım operasyonlarını durum, SLA ve sorumlu ekip bazında yönetin." />} />
-        <Route path="kuruluslar" element={<PlaceholderPage title="Kuruluşlar" description="Üretici ve bakım firmalarının onay, durum ve hizmet kapsamlarını yönetin." />} />
-        <Route path="raporlar" element={<PlaceholderPage title="Raporlar" description="Tespit ve giderme raporlarını inceleyin, doğrulayın ve paylaşın." />} />
-        <Route path="tarifeler" element={<PlaceholderPage title="Tarife yönetimi" description="Versiyonlu ücret tarifelerini hazırlayın, kontrol edin ve yayımlayın." />} />
-        <Route path="ayarlar" element={<PlaceholderPage title="Sistem ayarları" description="Platform tercihlerini, bildirimleri ve entegrasyonları yapılandırın." />} />
+        <Route path="isler" element={<JobsPage />} />
+        <Route path="taseronlar" element={<PlatformOnly><CompaniesPage kind="contractor" /></PlatformOnly>} />
+        <Route path="cpo-firmalar" element={<PlatformOnly><CompaniesPage kind="cpo" /></PlatformOnly>} />
+        <Route path="fiyatlar" element={<PlatformOnly><PricingPage /></PlatformOnly>} />
+        <Route path="bakiyeler" element={<PlatformOnly><BalancesPage /></PlatformOnly>} />
+        <Route path="denetim-kayitlari" element={<PlatformOnly><AuditLogsPage /></PlatformOnly>} />
+        <Route path="ayarlar" element={<PlatformOnly><SettingsPage /></PlatformOnly>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+function PlatformOnly({ children }: { children: React.ReactNode }) {
+  const { principal } = useAuth();
+  return principal?.tenantType === "PLATFORM" ? children : <Navigate to="/" replace />;
+}
+
+function RequireAuth() {
+  const { principal, loading } = useAuth();
+  if (loading) return <div className="app-loading"><span /><p>Güvenli oturum kontrol ediliyor…</p></div>;
+  return principal ? <AppShell /> : <Navigate to="/giris" replace />;
 }

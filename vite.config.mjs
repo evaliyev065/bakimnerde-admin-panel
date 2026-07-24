@@ -6,5 +6,8 @@ export default defineConfig({
   cacheDir: ".vite-cache",
   server: { port: 4173 },
   preview: { port: 4173 },
-  test: { environment: "jsdom" }
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"]
+  }
 });
