@@ -3,7 +3,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:3000";
 interface ApiEnvelope<T> { data: T }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem("bakimnerde_token");
+  const token = sessionStorage.getItem("bakimnerde_token");
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {

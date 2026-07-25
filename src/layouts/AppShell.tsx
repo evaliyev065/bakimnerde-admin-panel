@@ -8,7 +8,9 @@ import { Brand } from "../shared/components/Brand";
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { principal, logout } = useAuth();
-  const visibleNavigation = principal?.tenantType === "PLATFORM" ? navigation : navigation.filter(item => ["/", "/isler"].includes(item.to));
+  const visibleNavigation = principal?.tenantType === "PLATFORM"
+    ? navigation
+    : navigation.filter(item => ["/", "/isler", ...(principal?.role.endsWith("_ADMIN") ? ["/kullanicilar"] : [])].includes(item.to));
   return (
     <div className="app-shell">
       <aside className={`sidebar ${menuOpen ? "sidebar--open" : ""}`}>
@@ -27,7 +29,7 @@ export function AppShell() {
         <div className="sidebar__tenant">
           <span>AKTİF TENANT</span>
           <strong>{principal?.tenantName}</strong>
-          <small>{principal?.tenantType === "PLATFORM" ? "Platform yöneticisi" : "Şirket tenantı"}</small>
+          <small>{principal?.tenantType === "PLATFORM" ? "Bakımnerde merkezi" : principal?.tenantType === "CPO" ? "CPO firması" : "Taşeron yönetimi"}</small>
         </div>
         <div className="sidebar__support"><span className="status-dot" /><div><strong>Sistemler aktif</strong><small>MongoDB · sağlıklı</small></div></div>
       </aside>
