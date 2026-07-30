@@ -2,6 +2,7 @@ const labels = {
   waiting: "Beklemede",
   assigned: "Atandı",
   progress: "İşlemde",
+  additionalSupply: "Ek tedarik sürecinde",
   maintenanceDone: "Bakım tamamlandı",
   maintenanceApproved: "Bakım onaylandı",
   cpoApproval: "CPO onayı",

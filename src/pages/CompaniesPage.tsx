@@ -1,5 +1,5 @@
-import { CheckCircle2, Clock3, Edit3, Filter, Plus, Search, Trash2, X, XCircle } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { CheckCircle2, Clock3, Edit3, Plus, Search, Trash2, X, XCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { TURKEY_PROVINCES } from "../data/turkeyLocations";
 import { apiRequest } from "../lib/api";
 import { LocationFields, PhoneInput } from "../shared/components/FormControls";
@@ -42,7 +42,9 @@ const emptyForm: CompanyForm = {
 export function CompaniesPage({ kind }: { kind: CompanyKind }) {
   const isContractor = kind === "contractor";
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [query, setQuery] = useState("");
   const [applications, setApplications] = useState<ContractorApplication[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [form, setForm] = useState<CompanyForm>(emptyForm);
   const [modalOpen, setModalOpen] = useState(false);
   const [error, setError] = useState("");
@@ -56,6 +58,10 @@ export function CompaniesPage({ kind }: { kind: CompanyKind }) {
     setApplications(applicationItems);
   }, [isContractor]);
   useEffect(() => { void load(); }, [load]);
+  const visibleCompanies = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase("tr-TR");
+    return needle ? companies.filter((company) => `${company.name} ${company.tenantKey} ${company.contact.email} ${company.contact.phone} ${company.profile?.address?.city ?? ""} ${company.profile?.address?.district ?? ""}`.toLocaleLowerCase("tr-TR").includes(needle)) : companies;
+  }, [companies, query]);
 
   function openCreate() { setForm(emptyForm); setError(""); setModalOpen(true); }
   function openEdit(company: Company) {
@@ -142,22 +148,27 @@ export function CompaniesPage({ kind }: { kind: CompanyKind }) {
         {applications.length === 0 && <div className="empty-state"><b>Henüz başvuru yok</b><span>Yeni self-servis kayıtlar burada onay isteği olarak görünecek.</span></div>}
       </div>
     </section>}
-    <div className="toolbar"><label className="table-search"><Search size={16} /><input placeholder="Firma adı veya kodu ara" /></label><button className="button button--outline"><Filter size={16} /> Filtrele</button><button className="button button--primary" onClick={openCreate}><Plus size={16} /> {isContractor ? "Taşeron ekle" : "CPO ekle"}</button></div>
+    <div className="toolbar"><label className="table-search"><Search size={16} /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Firma adı veya kodu ara" /></label><button className="button button--primary" onClick={openCreate}><Plus size={16} /> {isContractor ? "Taşeron ekle" : "CPO ekle"}</button></div>
     <section className="data-card"><div className={`data-table ${isContractor ? "contractor-table live-company-table" : "cpo-table live-company-table"}`}>
-      <div className="data-row data-head"><span>FİRMA</span><span>İLETİŞİM</span><span>{isContractor ? "HİZMET BÖLGESİ" : "ANLAŞMA"}</span><span>{isContractor ? "MÜSAİTLİK" : "İSTASYON"}</span><span>{isContractor ? "BAKIM MALİYETİ" : "TENANT"}</span><span>DURUM</span><span>İŞLEMLER</span></div>
-      {companies.map(company => <div className="data-row" key={company.id}>
+      <div className="data-row data-head"><span>FİRMA</span><span>İLETİŞİM</span><span>KONUM</span><span>FİRMA TÜRÜ</span><span>FİRMA KODU</span><span>DURUM</span><span>İŞLEMLER</span></div>
+      {visibleCompanies.map(company => <div className="data-row company-summary-row" key={company.id} onClick={() => setSelectedCompany(company)}>
         <span className="company-cell"><i>{company.name.slice(0, 2).toUpperCase()}</i><span><b>{company.name}</b><small>{company.tenantKey}</small></span></span>
         <span><b>{company.contact.email}</b><small>{company.contact.phone || "Telefon yok"}</small></span>
-        <span>{isContractor ? company.profile?.serviceRegions?.join(" · ") || "Tanımlanmadı" : company.profile?.agreementType || "Tanımlanmadı"}</span>
-        <span>{isContractor ? <><b>{company.profile?.availabilityDays?.join(", ") || "—"}</b><small>Sözleşme: {company.profile?.contractApproval?.status === "APPROVED" ? "Onaylı" : "Bekliyor"}</small></> : company.profile?.stationCount ?? 0}</span>
-        <span className="private-value"><b>{isContractor ? `₺${Number(company.profile?.maintenanceBaseCost ?? 0).toLocaleString("tr-TR")}` : company.tenantKey}</b><small>Yalnız Bakımnerde</small></span>
+        <span>{[company.profile?.address?.district, company.profile?.address?.city].filter(Boolean).join(" / ") || "Tanımlanmadı"}</span>
+        <span><b>{isContractor ? "Taşeron firma" : "CPO firma"}</b><small>Detay için firmaya tıklayın</small></span>
+        <span><b>{company.tenantKey}</b></span>
         <span><StatusBadge status={company.status === "ACTIVE" ? "active" : "pending"} /></span>
-        <span className="row-actions"><button onClick={() => openEdit(company)} title="Düzenle"><Edit3 /></button><button className="danger" onClick={() => void remove(company)} title="Sil"><Trash2 /></button></span>
+        <span className="row-actions"><button onClick={(event) => { event.stopPropagation(); openEdit(company); }} title="Düzenle"><Edit3 /></button><button className="danger" onClick={(event) => { event.stopPropagation(); void remove(company); }} title="Sil"><Trash2 /></button></span>
       </div>)}
-      {companies.length === 0 && <div className="empty-state"><b>Henüz firma yok</b><span>İlk firmayı ekleyerek başlayın.</span></div>}
+      {visibleCompanies.length === 0 && <div className="empty-state"><b>{query ? "Aramayla eşleşen firma yok" : "Henüz firma yok"}</b><span>{query ? "Arama ölçütünü değiştirin." : "İlk firmayı ekleyerek başlayın."}</span></div>}
     </div></section>
+    {selectedCompany && <div className="drawer-wrap"><button className="drawer-backdrop" onClick={() => setSelectedCompany(null)} aria-label="Kapat" /><aside className="detail-drawer company-detail-drawer">
+      <div className="drawer-head"><div><span>FİRMA DETAYI</span><h2>{selectedCompany.name}</h2><p>{selectedCompany.type === "CONTRACTOR" ? "Taşeron firma" : "CPO firma"} · {selectedCompany.tenantKey}</p></div><button className="icon-button" onClick={() => setSelectedCompany(null)}><X /></button></div>
+      <section className="drawer-section"><h3>Temel firma bilgileri</h3><div className="detail-summary"><div><small>E-POSTA</small><b>{selectedCompany.contact.email}</b></div><div><small>TELEFON</small><b>{selectedCompany.contact.phone || "—"}</b></div><div><small>DURUM</small><b>{selectedCompany.status === "ACTIVE" ? "Aktif" : "Askıda"}</b></div><div><small>KONUM</small><b>{[selectedCompany.profile?.address?.district, selectedCompany.profile?.address?.city].filter(Boolean).join(" / ") || "Tanımlanmadı"}</b></div></div></section>
+      {selectedCompany.type === "CONTRACTOR" ? <section className="drawer-section"><h3>Taşeron firma detayları</h3><div className="detail-summary"><div><small>HİZMET BÖLGELERİ</small><b>{selectedCompany.profile?.serviceRegions?.join(", ") || "Tanımlanmadı"}</b></div><div><small>MÜSAİT GÜNLER</small><b>{selectedCompany.profile?.availabilityDays?.join(", ") || "—"}</b></div><div><small>SÖZLEŞME</small><b>{selectedCompany.profile?.contractApproval?.status || "PENDING"}</b></div><div><small>BAKIM MALİYETİ</small><b>₺{Number(selectedCompany.profile?.maintenanceBaseCost ?? 0).toLocaleString("tr-TR")}</b></div></div></section> : <section className="drawer-section"><h3>CPO firma detayları</h3><div className="detail-summary"><div><small>ANLAŞMA</small><b>{selectedCompany.profile?.agreementType || "Tanımlanmadı"}</b></div><div><small>İSTASYON SAYISI</small><b>{selectedCompany.profile?.stationCount ?? 0}</b></div></div></section>}
+    </aside></div>}
     {modalOpen && <div className="modal-wrap"><button className="modal-backdrop" onClick={() => setModalOpen(false)} aria-label="Kapat" /><form className="tenant-modal" onSubmit={save}><div className="modal-head"><div><p className="eyebrow">{form.id ? "FİRMA DÜZENLE" : "YENİ FİRMA"}</p><h2>{isContractor ? "Taşeron firma" : "CPO firma"}</h2><span>Bilgiler kaydedildiğinde anında panelde görünür.</span></div><button type="button" className="icon-button" onClick={() => setModalOpen(false)}><X /></button></div>
-      <div className="modal-fields"><Field label="Firma adı" value={form.name} set={value => setForm({ ...form, name: value })} required /><Field label="Tenant anahtarı" value={form.tenantKey} set={value => setForm({ ...form, tenantKey: value })} disabled={Boolean(form.id)} required /><Field label="Firma e-postası" value={form.contactEmail} set={value => setForm({ ...form, contactEmail: value })} type="email" required /><PhoneInput label="Telefon" value={form.contactPhone} onChange={value => setForm({ ...form, contactPhone: value })} required />
+      <div className="modal-fields"><Field label="Firma adı" value={form.name} set={value => setForm({ ...form, name: value })} required /><Field label="Firma kodu" value={form.tenantKey} set={value => setForm({ ...form, tenantKey: value })} disabled={Boolean(form.id)} required /><Field label="Firma e-postası" value={form.contactEmail} set={value => setForm({ ...form, contactEmail: value })} type="email" required /><PhoneInput label="Telefon" value={form.contactPhone} onChange={value => setForm({ ...form, contactPhone: value })} required />
         {form.id && <label><span>Durum</span><select value={form.status} onChange={event => setForm({ ...form, status: event.target.value as CompanyForm["status"] })}><option value="ACTIVE">Aktif</option><option value="SUSPENDED">Askıda</option></select></label>}
         {!form.id && <><Field label="İlk yönetici adı" value={form.adminName} set={value => setForm({ ...form, adminName: value })} required /><Field label="Yönetici e-postası" value={form.adminEmail} set={value => setForm({ ...form, adminEmail: value })} type="email" required /><Field label="İlk parola" value={form.adminPassword} set={value => setForm({ ...form, adminPassword: value })} type="password" required /></>}
         <LocationFields city={form.city} district={form.district} onCityChange={city => setForm(current => ({ ...current, city, district: "" }))} onDistrictChange={district => setForm(current => ({ ...current, district }))} required={false} />

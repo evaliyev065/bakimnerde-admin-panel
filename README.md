@@ -20,4 +20,4 @@ Kalite kapısı: `npm.cmd run typecheck`, `npm.cmd test`, `npm.cmd run build`.
 
 Oturum anahtarı sekme bazlı `sessionStorage` içinde tutulur; böylece aynı tarayıcının farklı sekmelerinde farklı firma/rol oturumları test edilebilir. İl listesi uygulamada sabittir, seçilen ilin ilçeleri TurkiyeAPI v2 üzerinden dropdown’a yüklenir.
 
-İş detayında Bakımnerde ve taşeron yönetimi, atanmış taşeron firmaya ait aktif saha personelini ayrı dropdown’dan seçer. Atamadan sonra iş `../bakimnerde-field-app/` PWA görev listesine düşer.
+İş detayında Bakımnerde ve taşeron yönetimi, atanmış taşeron firmaya ait aktif saha personelini ayrı dropdown’dan seçer. Atamadan sonra iş `../bakimnerde-field-app/` Mobile App görev listesine düşer.

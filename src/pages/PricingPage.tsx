@@ -1,5 +1,5 @@
 import { Edit3, EyeOff, Plus, Search, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { apiRequest } from "../lib/api";
 import { PageHeader } from "../shared/components/PageHeader";
 
@@ -16,6 +16,7 @@ const itemCatalog = [
 
 export function PricingPage() {
   const [items, setItems] = useState<Price[]>([]);
+  const [query, setQuery] = useState("");
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [form, setForm] = useState<Price>(emptyPrice);
   const [counterpartyType, setCounterpartyType] = useState<"CONTRACTOR" | "CPO">("CONTRACTOR");
@@ -51,13 +52,17 @@ export function PricingPage() {
   }
   const selectableTenants = tenants.filter(tenant => tenant.type === counterpartyType);
   const catalog = Array.from(new Map([...itemCatalog, ...items.map(item => [item.itemCode, item.itemName] as const)]).entries());
+  const visibleItems = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase("tr-TR");
+    return needle ? items.filter((item) => `${item.itemCode} ${item.itemName} ${item.category} ${item.counterpartyName} ${item.supplyType}`.toLocaleLowerCase("tr-TR").includes(needle)) : items;
+  }, [items, query]);
   return <>
     <PageHeader eyebrow="TİCARİ YÖNETİM" title="Fiyat yönetimi" description="Taşeron maliyetlerini ve CPO satış fiyatlarını birbirinden bağımsız yönetin." />
     <div className="privacy-notice"><EyeOff size={19} /><div><strong>Rol bazlı fiyat görünürlüğü</strong><span>CPO yalnız kendisine atanan satış fiyatını, taşeron yalnız kendisine atanan maliyeti görür; atanmayan tutar “-” görünür.</span></div></div>
-    <div className="toolbar"><label className="table-search"><Search size={16} /><input placeholder="Parça veya kategori ara" /></label><button className="button button--primary" onClick={openCreate}><Plus size={16} /> Yeni fiyat kalemi</button></div>
+    <div className="toolbar"><label className="table-search"><Search size={16} /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Parça veya kategori ara" /></label><button className="button button--primary" onClick={openCreate}><Plus size={16} /> Yeni fiyat kalemi</button></div>
     <section className="data-card"><div className="data-table pricing-table live-pricing-table"><div className="data-row data-head"><span>PARÇA / İŞLEM</span><span>KATEGORİ</span><span>TAŞERON MALİYETİ</span><span>CPO SATIŞI</span><span>MARJ</span><span>FİRMA / TEMİN</span><span>İŞLEMLER</span></div>
-      {items.map(item => <div className="data-row" key={item.id}><span className="primary-cell"><b>{item.itemName}</b><small>{item.itemCode}</small></span><span>{item.category}</span><span className="private-value"><b>₺{item.cost.toLocaleString("tr-TR")}</b><small>Taşeron ekranı</small></span><span className="private-value sale"><b>₺{item.salePrice.toLocaleString("tr-TR")}</b><small>CPO ekranı</small></span><span className="positive"><b>%{item.salePrice ? Math.round((item.salePrice - item.cost) / item.salePrice * 100) : 0}</b></span><span><b>{item.counterpartyName}</b><small>{item.supplyType}</small></span><span className="row-actions"><button onClick={() => openEdit(item)}><Edit3 /></button><button className="danger" onClick={() => void remove(item)}><Trash2 /></button></span></div>)}
-      {items.length === 0 && <div className="empty-state"><b>Fiyat kalemi yok</b><span>İlk fiyatı ekleyerek başlayın.</span></div>}
+      {visibleItems.map(item => <div className="data-row" key={item.id}><span className="primary-cell"><b>{item.itemName}</b><small>{item.itemCode}</small></span><span>{item.category}</span><span className="private-value"><b>₺{item.cost.toLocaleString("tr-TR")}</b><small>Taşeron ekranı</small></span><span className="private-value sale"><b>₺{item.salePrice.toLocaleString("tr-TR")}</b><small>CPO ekranı</small></span><span className="positive"><b>%{item.salePrice ? Math.round((item.salePrice - item.cost) / item.salePrice * 100) : 0}</b></span><span><b>{item.counterpartyName}</b><small>{item.supplyType}</small></span><span className="row-actions"><button onClick={() => openEdit(item)}><Edit3 /></button><button className="danger" onClick={() => void remove(item)}><Trash2 /></button></span></div>)}
+      {visibleItems.length === 0 && <div className="empty-state"><b>{query ? "Aramayla eşleşen fiyat yok" : "Fiyat kalemi yok"}</b><span>{query ? "Arama ölçütünü değiştirin." : "İlk fiyatı ekleyerek başlayın."}</span></div>}
     </div></section>
     {modalOpen && <div className="modal-wrap"><button className="modal-backdrop" onClick={() => setModalOpen(false)} aria-label="Kapat" /><form className="tenant-modal" onSubmit={save}><div className="modal-head"><div><p className="eyebrow">{form.id ? "FİYAT DÜZENLE" : "YENİ FİYAT"}</p><h2>Parça veya işçilik fiyatı</h2><span>Her taraf yalnız kendi rolüne atanmış tutarı görür.</span></div><button type="button" className="icon-button" onClick={() => setModalOpen(false)}><X /></button></div><div className="modal-fields">
       <label><span>Fiyat kalemi (kod · ad)</span><select required value={form.itemCode} onChange={event => {

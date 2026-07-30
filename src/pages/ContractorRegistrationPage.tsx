@@ -1,8 +1,9 @@
-import { Building2, CheckCircle2, FileCheck2, ShieldCheck, Wrench, Zap } from "lucide-react";
+import { Building2, CheckCircle2, FileCheck2, ShieldCheck, Wrench } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { TURKEY_PROVINCES } from "../data/turkeyLocations";
 import { apiRequest } from "../lib/api";
 import { LocationFields, PhoneInput } from "../shared/components/FormControls";
+import { Brand } from "../shared/components/Brand";
 
 interface RegistrationForm {
   companyName: string;
@@ -95,7 +96,7 @@ export function ContractorRegistrationPage() {
 
   return <main className="registration-page">
     <header className="registration-hero">
-      <div className="registration-brand"><span><Zap fill="currentColor" /></span><b>bakımnerde</b></div>
+      <div className="registration-brand"><Brand /></div>
       <div>
         <p className="eyebrow">TAŞERON HİZMET AĞI</p>
         <h1>Bakımnerde taşeron başvurusu</h1>

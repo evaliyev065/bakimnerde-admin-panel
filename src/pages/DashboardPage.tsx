@@ -26,7 +26,7 @@ export function DashboardPage() {
   useEffect(() => {
     const load = () => apiRequest<Job[]>("/jobs-list").then(setJobs);
     void load();
-    const timer = window.setInterval(() => void load(), 10000);
+    const timer = window.setInterval(() => void load(), 3_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -59,13 +59,13 @@ export function DashboardPage() {
       <Metric icon={<CheckCircle2 />} color="green" label="Tamamlanan" value={completed} detail="Ödenen veya kapanan" />
       <Metric icon={<WalletCards />} color="blue" label={sideMetric.title} value={sideMetric.value} detail={sideMetric.detail} />
     </section>
-    {risk > 0 && <section className="attention-strip"><TriangleAlert size={18} /><div><strong>{risk} işte süre riski var</strong><span>Atama, bakım veya onay aksiyonu bekleniyor.</span></div><Link to="/isler">Riskli işleri göster <ArrowRight size={15} /></Link></section>}
+    {risk > 0 && <section className="attention-strip"><TriangleAlert size={18} /><div><strong>{risk} işte süre riski var</strong><span>Atama, bakım veya onay aksiyonu bekleniyor.</span></div><Link to="/jobs">Riskli işleri göster <ArrowRight size={15} /></Link></section>}
     <div className="dashboard-grid">
       <section className="panel panel--orders">
-        <div className="panel__head"><div><h2>Son işler</h2><p>CPO, Bakımnerde ve taşeron ekranlarında aynı kayıtlar</p></div><Link to="/isler">Tümünü gör <ArrowRight size={16} /></Link></div>
+        <div className="panel__head"><div><h2>Son işler</h2><p>CPO, Bakımnerde ve taşeron ekranlarında aynı kayıtlar</p></div><Link to="/jobs">Tümünü gör <ArrowRight size={16} /></Link></div>
         <div className="orders-table">
           <div className="orders-table__head"><span>İŞ NO</span><span>İSTASYON / CPO</span><span>DURUM</span><span>SON TARİH</span><span /></div>
-          {priority.map((job) => <div className="order-row" key={job.documentId}><strong>{job.id}</strong><div><b>{job.station}</b><small>{job.city} · {job.cpo}</small></div><StatusBadge status={badge[job.status] ?? "waiting"} /><div>{new Date(job.deadlineAt).toLocaleDateString("tr-TR")}</div><Link className="row-arrow" to="/isler"><ArrowRight size={16} /></Link></div>)}
+          {priority.map((job) => <div className="order-row" key={job.documentId}><strong>{job.id}</strong><div><b>{job.station}</b><small>{job.city} · {job.cpo}</small></div><StatusBadge status={badge[job.status] ?? "waiting"} /><div>{new Date(job.deadlineAt).toLocaleDateString("tr-TR")}</div><Link className="row-arrow" to="/jobs"><ArrowRight size={16} /></Link></div>)}
           {priority.length === 0 && <div className="empty-state"><b>Henüz iş yok</b><span>CPO ilk bakım talebini yayınlayabilir.</span></div>}
         </div>
       </section>

@@ -1,9 +1,9 @@
 import {
   BadgeDollarSign,
   Building2,
+  BatteryCharging,
   Gauge,
   Handshake,
-  Settings2,
   ScrollText,
   WalletCards,
   Wrench,
@@ -11,13 +11,13 @@ import {
 } from "lucide-react";
 
 export const navigation = [
-  { label: "Genel bakış", to: "/", icon: Gauge },
-  { label: "İşler", to: "/isler", icon: Wrench, badge: "20" },
-  { label: "Kullanıcı yönetimi", to: "/kullanicilar", icon: Users },
-  { label: "Taşeron firmalar", to: "/taseronlar", icon: Handshake },
-  { label: "CPO firmalar", to: "/cpo-firmalar", icon: Building2 },
-  { label: "Fiyat yönetimi", to: "/fiyatlar", icon: BadgeDollarSign },
-  { label: "Bakiye & hak ediş", to: "/bakiyeler", icon: WalletCards },
-  { label: "Denetim kayıtları", to: "/denetim-kayitlari", icon: ScrollText },
-  { label: "Tenant & sistem", to: "/ayarlar", icon: Settings2 },
+  { label: "Genel bakış", to: "/dashboard", icon: Gauge },
+  { label: "İşler", to: "/jobs", icon: Wrench, badge: true },
+  { label: "Cihazlar ve İstasyonlar", to: "/assets", icon: BatteryCharging },
+  { label: "Kullanıcı yönetimi", to: "/users", icon: Users },
+  { label: "Taşeron firmalar", to: "/contractors", icon: Handshake },
+  { label: "CPO firmalar", to: "/cpo-companies", icon: Building2 },
+  { label: "Fiyat yönetimi", to: "/pricing", icon: BadgeDollarSign },
+  { label: "Cüzdan", to: "/wallet", icon: WalletCards },
+  { label: "Denetim kayıtları", to: "/audit-logs", icon: ScrollText },
 ] as const;

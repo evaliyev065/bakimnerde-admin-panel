@@ -16,3 +16,27 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   if (!response.ok) throw new Error(body.error?.message ?? "İşlem tamamlanamadı.");
   return body.data;
 }
+
+export async function apiDownload(path: string, payload: Record<string, unknown>, fileName: string): Promise<void> {
+  const token = sessionStorage.getItem("bakimnerde_token");
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+    throw new Error(body?.error?.message ?? "Dosya indirilemedi.");
+  }
+  const objectUrl = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+}
