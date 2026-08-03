@@ -23,7 +23,7 @@ describe("Admin panel auth routing", () => {
   });
 
   it("Bakımnerde girişini yalnız özel URL üzerinde gösterir", () => {
-    render(<MemoryRouter initialEntries={["/admin/login"]}><AuthProvider><App /></AuthProvider></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/auth/admin/login"]}><AuthProvider><App /></AuthProvider></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Yetkili personel girişi" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Ekosistemi tek merkezden yönet/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "CPO firma" })).not.toBeInTheDocument();
@@ -69,14 +69,14 @@ describe("Admin panel auth routing", () => {
       if (url.endsWith("/jobs-list")) return apiResponse([{
         documentId: "job-1", id: "BN-2501", station: "Merkez İstasyonu", city: "İstanbul", district: "Kadıköy",
         maintenanceTarget: "DEVICE", charger: "CP-101", chargerModel: "Model X", status: "IN_PROGRESS",
-        deadlineAt: "2026-08-01T08:00:00.000Z", workflowCycle: 1, cpo: "VoltGo", contractor: "Saha Teknik",
+        deadlineAt: "2026-08-01T08:00:00.000Z", workflowCycle: 1, cpo: "Wattarya", contractor: "Saha Teknik",
         amount: 1000, contractorCost: 700, cpoTenantId: "cpo-1", contractorTenantId: "contractor-1",
       }]);
       return apiResponse([]);
     }));
     render(<MemoryRouter initialEntries={["/dashboard"]}><AuthProvider><App /></AuthProvider></MemoryRouter>);
     const search = await screen.findByRole("searchbox", { name: "Platformda ara" });
-    fireEvent.change(search, { target: { value: "VoltGo" } });
+    fireEvent.change(search, { target: { value: "Wattarya" } });
     fireEvent.submit(search.closest("form")!);
     expect(await screen.findByRole("heading", { name: "İş yönetimi" })).toBeInTheDocument();
     expect(await screen.findByText("BN-2501")).toBeInTheDocument();

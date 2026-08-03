@@ -11,7 +11,7 @@ interface Company {
   id: string; tenantKey: string; name: string; type: string; status: "ACTIVE" | "SUSPENDED";
   contact: { email: string; phone: string };
   profile?: {
-    maintenanceBaseCost?: number; serviceRegions?: string[]; availabilityDays?: number[];
+    maintenanceBaseCost?: number; serviceRegions?: string[]; activityAreas?: string[]; specialties?: string[]; availabilityDays?: number[];
     agreementType?: string; stationCount?: number;
     address?: { city?: string; district?: string; line?: string };
     contractApproval?: { status?: string; fileName?: string; documentData?: string };
@@ -27,13 +27,13 @@ interface ContractorApplication {
 interface CompanyForm {
   id: string; name: string; tenantKey: string; contactEmail: string; contactPhone: string; status: "ACTIVE" | "SUSPENDED";
   adminName: string; adminEmail: string; adminPassword: string; maintenanceBaseCost: string;
-  serviceRegions: string; availabilityDays: string; agreementType: string; stationCount: string;
+  serviceRegions: string; activityAreas: string; availabilityDays: string; agreementType: string; stationCount: string;
   contractStatus: string; contractFileName: string; contractDocumentData: string;
   city: string; district: string;
 }
 const emptyForm: CompanyForm = {
   id: "", name: "", tenantKey: "", contactEmail: "", contactPhone: "", status: "ACTIVE",
-  adminName: "", adminEmail: "", adminPassword: "", maintenanceBaseCost: "", serviceRegions: "",
+  adminName: "", adminEmail: "", adminPassword: "", maintenanceBaseCost: "", serviceRegions: "", activityAreas: "",
   availabilityDays: "1,2,3,4,5", agreementType: "JOB_BASED", stationCount: "0",
   contractStatus: "PENDING", contractFileName: "", contractDocumentData: "",
   city: "", district: "",
@@ -70,6 +70,7 @@ export function CompaniesPage({ kind }: { kind: CompanyKind }) {
       contactEmail: company.contact.email, contactPhone: company.contact.phone, status: company.status,
       maintenanceBaseCost: String(company.profile?.maintenanceBaseCost ?? ""),
       serviceRegions: company.profile?.serviceRegions?.join(", ") ?? "",
+      activityAreas: (company.profile?.activityAreas ?? company.profile?.specialties)?.join(",") ?? "",
       availabilityDays: company.profile?.availabilityDays?.join(",") ?? "1,2,3,4,5",
       agreementType: company.profile?.agreementType ?? "JOB_BASED", stationCount: String(company.profile?.stationCount ?? 0),
       contractStatus: company.profile?.contractApproval?.status ?? "PENDING",
@@ -84,6 +85,8 @@ export function CompaniesPage({ kind }: { kind: CompanyKind }) {
     const profile = isContractor ? {
       maintenanceBaseCost: Number(form.maintenanceBaseCost || 0),
       serviceRegions: form.serviceRegions.split(",").map(item => item.trim()).filter(Boolean),
+      activityAreas: splitValues(form.activityAreas),
+      specialties: splitValues(form.activityAreas),
       availabilityDays: form.availabilityDays.split(",").map(Number).filter(Boolean),
       contractApproval: {
         status: form.contractStatus, fileName: form.contractFileName, documentData: form.contractDocumentData,
@@ -165,7 +168,7 @@ export function CompaniesPage({ kind }: { kind: CompanyKind }) {
     {selectedCompany && <div className="drawer-wrap"><button className="drawer-backdrop" onClick={() => setSelectedCompany(null)} aria-label="Kapat" /><aside className="detail-drawer company-detail-drawer">
       <div className="drawer-head"><div><span>FİRMA DETAYI</span><h2>{selectedCompany.name}</h2><p>{selectedCompany.type === "CONTRACTOR" ? "Taşeron firma" : "CPO firma"} · {selectedCompany.tenantKey}</p></div><button className="icon-button" onClick={() => setSelectedCompany(null)}><X /></button></div>
       <section className="drawer-section"><h3>Temel firma bilgileri</h3><div className="detail-summary"><div><small>E-POSTA</small><b>{selectedCompany.contact.email}</b></div><div><small>TELEFON</small><b>{selectedCompany.contact.phone || "—"}</b></div><div><small>DURUM</small><b>{selectedCompany.status === "ACTIVE" ? "Aktif" : "Askıda"}</b></div><div><small>KONUM</small><b>{[selectedCompany.profile?.address?.district, selectedCompany.profile?.address?.city].filter(Boolean).join(" / ") || "Tanımlanmadı"}</b></div></div></section>
-      {selectedCompany.type === "CONTRACTOR" ? <section className="drawer-section"><h3>Taşeron firma detayları</h3><div className="detail-summary"><div><small>HİZMET BÖLGELERİ</small><b>{selectedCompany.profile?.serviceRegions?.join(", ") || "Tanımlanmadı"}</b></div><div><small>MÜSAİT GÜNLER</small><b>{selectedCompany.profile?.availabilityDays?.join(", ") || "—"}</b></div><div><small>SÖZLEŞME</small><b>{selectedCompany.profile?.contractApproval?.status || "PENDING"}</b></div><div><small>BAKIM MALİYETİ</small><b>₺{Number(selectedCompany.profile?.maintenanceBaseCost ?? 0).toLocaleString("tr-TR")}</b></div></div></section> : <section className="drawer-section"><h3>CPO firma detayları</h3><div className="detail-summary"><div><small>ANLAŞMA</small><b>{selectedCompany.profile?.agreementType || "Tanımlanmadı"}</b></div><div><small>İSTASYON SAYISI</small><b>{selectedCompany.profile?.stationCount ?? 0}</b></div></div></section>}
+      {selectedCompany.type === "CONTRACTOR" ? <section className="drawer-section"><h3>Teknik servis kapsamı</h3><div className="detail-summary"><div><small>HİZMET BÖLGELERİ</small><b>{selectedCompany.profile?.serviceRegions?.join(", ") || "Tanımlanmadı"}</b></div><div><small>FAALİYET ALANLARI</small><b>{(selectedCompany.profile?.activityAreas ?? selectedCompany.profile?.specialties)?.map(specialtyLabel).join(", ") || "Tanımlanmadı"}</b></div><div><small>MÜSAİT GÜNLER</small><b>{selectedCompany.profile?.availabilityDays?.join(", ") || "—"}</b></div><div><small>SÖZLEŞME</small><b>{selectedCompany.profile?.contractApproval?.status || "PENDING"}</b></div><div><small>BAKIM MALİYETİ</small><b>₺{Number(selectedCompany.profile?.maintenanceBaseCost ?? 0).toLocaleString("tr-TR")}</b></div></div></section> : <section className="drawer-section"><h3>CPO firma detayları</h3><div className="detail-summary"><div><small>ANLAŞMA</small><b>{selectedCompany.profile?.agreementType || "Tanımlanmadı"}</b></div><div><small>İSTASYON SAYISI</small><b>{selectedCompany.profile?.stationCount ?? 0}</b></div></div></section>}
     </aside></div>}
     {modalOpen && <div className="modal-wrap"><button className="modal-backdrop" onClick={() => setModalOpen(false)} aria-label="Kapat" /><form className="tenant-modal" onSubmit={save}><div className="modal-head"><div><p className="eyebrow">{form.id ? "FİRMA DÜZENLE" : "YENİ FİRMA"}</p><h2>{isContractor ? "Taşeron firma" : "CPO firma"}</h2><span>Bilgiler kaydedildiğinde anında panelde görünür.</span></div><button type="button" className="icon-button" onClick={() => setModalOpen(false)}><X /></button></div>
       <div className="modal-fields"><Field label="Firma adı" value={form.name} set={value => setForm({ ...form, name: value })} required /><Field label="Firma kodu" value={form.tenantKey} set={value => setForm({ ...form, tenantKey: value })} disabled={Boolean(form.id)} required /><Field label="Firma e-postası" value={form.contactEmail} set={value => setForm({ ...form, contactEmail: value })} type="email" required /><PhoneInput label="Telefon" value={form.contactPhone} onChange={value => setForm({ ...form, contactPhone: value })} required />
@@ -175,6 +178,7 @@ export function CompaniesPage({ kind }: { kind: CompanyKind }) {
         {isContractor ? <>
           <Field label="Bakım başı maliyet" value={form.maintenanceBaseCost} set={value => setForm({ ...form, maintenanceBaseCost: value })} type="number" />
           <label><span>Hizmet bölgeleri</span><select multiple value={splitValues(form.serviceRegions)} onChange={event => setForm({ ...form, serviceRegions: selectedValues(event.currentTarget).join(",") })}>{TURKEY_PROVINCES.map(item => <option value={item.name} key={item.id}>{item.name}</option>)}</select></label>
+          <label><span>Faaliyet alanları</span><select multiple value={splitValues(form.activityAreas)} onChange={event => setForm({ ...form, activityAreas: selectedValues(event.currentTarget).join(",") })}>{["PERIODIC_MAINTENANCE","ELECTRICAL","ELECTRONICS","MECHANICAL","SOFTWARE","CHARGER_INSTALLATION"].map(value => <option value={value} key={value}>{specialtyLabel(value)}</option>)}</select></label>
           <label><span>Müsait günler</span><select multiple value={splitValues(form.availabilityDays)} onChange={event => setForm({ ...form, availabilityDays: selectedValues(event.currentTarget).join(",") })}>{[["1","Pazartesi"],["2","Salı"],["3","Çarşamba"],["4","Perşembe"],["5","Cuma"],["6","Cumartesi"],["7","Pazar"]].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
           <label><span>Online sözleşme durumu</span><select value={form.contractStatus} onChange={event => setForm({ ...form, contractStatus: event.target.value })}><option value="PENDING">Onay bekliyor</option><option value="APPROVED">Onaylandı</option><option value="REJECTED">Reddedildi</option></select></label>
           <label className="contract-upload"><span>Online sözleşme dosyası (en fazla 600 KB)</span><input type="file" accept=".pdf,.doc,.docx,image/*" onChange={event => void readContract(event.target.files?.[0], setForm, form)} /><small>{form.contractFileName || "Dosya seçilmedi"}</small></label>

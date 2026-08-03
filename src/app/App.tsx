@@ -24,7 +24,7 @@ export function App() {
   return (
     <Routes>
       <Route path="login" element={<LoginPage />} />
-      <Route path="admin/login" element={<PlatformLoginPage />} />
+      <Route path="auth/admin/login" element={<PlatformLoginPage />} />
       <Route path="contractor-registration" element={<ContractorRegistrationPage />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route element={<RequireAuth />}>

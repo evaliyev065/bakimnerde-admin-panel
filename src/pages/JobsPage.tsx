@@ -1,8 +1,8 @@
 import {
-  CalendarClock, CheckCircle2, ChevronRight, ClipboardCheck, Download, Edit3, Image, MessageSquare, Plus, RefreshCw,
-  Play, Send, ShieldCheck, Trash2, UserRound, Wrench, X,
+  CalendarClock, CheckCircle2, ChevronRight, ClipboardCheck, CreditCard, Download, Edit3, Image, MessageSquare, PackageCheck, Plus, RefreshCw,
+  Send, ShieldCheck, Trash2, UserRound, Wrench, X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { apiDownload, apiRequest } from "../lib/api";
@@ -15,6 +15,8 @@ interface JobApi {
   maintenanceTarget: "DEVICE" | "STATION"; stationMaintenanceArea?: "GENERAL_COMPONENTS" | "GRID_CONNECTION" | null;
   status: string; deadlineAt: string; appointmentAt?: string; assignmentAcceptanceDeadlineAt?: string;
   contractorAcceptedAt?: string; outageNotificationSentAt?: string; maintenanceStartedAt?: string; workflowCycle: number;
+  assignmentAt?: string; fieldWorkerAssignedAt?: string; maintenanceCompletedAt?: string; platformApprovedAt?: string;
+  cpoApprovedAt?: string; cpoToPlatformPaidAt?: string; contractorPaidAt?: string; closedAt?: string;
   cpo: string; contractor: string; amount: number | null; contractorCost: number | null;
   cpoTenantId: string; contractorTenantId?: string; fieldWorkerUserId?: string; fieldWorkerName?: string; fieldWorkerPhone?: string;
 }
@@ -29,7 +31,7 @@ interface FieldReport {
 }
 interface AdditionalRequest {
   id: string; type: string; description: string; cpoPrice?: number | null; status: string; partSupplyStatus: string;
-  supplyDeadlineAt?: string; pricingNote?: string; deadlineNote?: string;
+  supplyDeadlineAt?: string; pricingNote?: string; deadlineNote?: string; pricedAt?: string; suppliedAt?: string;
 }
 interface JobMessage { id: string; text: string; senderName: string; senderTenantName: string; createdAt: string; mine: boolean }
 interface JobForm {
@@ -39,12 +41,6 @@ interface JobForm {
   cpoPrice: string; contractorCost: string;
 }
 
-const statuses = [
-  ["WAITING", "Beklemede"], ["ASSIGNED", "Atandı"], ["IN_PROGRESS", "İşlemde"],
-  ["ADDITIONAL_SUPPLY", "Ek tedarik sürecinde"],
-  ["MAINTENANCE_DONE", "Bakım tamamlandı"], ["MAINTENANCE_APPROVED", "Bakım onaylandı"],
-  ["CPO_APPROVAL", "CPO onayı"], ["PAID", "Ödeme yapıldı"], ["CLOSED", "Süreç sonlandı"],
-] as const;
 const statusMap: Record<string, Status> = {
   WAITING: "waiting", ASSIGNED: "assigned", IN_PROGRESS: "progress",
   ADDITIONAL_SUPPLY: "additionalSupply",
@@ -208,12 +204,22 @@ export function JobsPage() {
     } catch (reason) { window.alert(errorMessage(reason, "Mesaj gönderilemedi.")); }
   }
 
-  async function downloadEvidence(item: Evidence) {
-    try {
-      await apiDownload("/job-evidence-download", { id: item.id }, item.fileName || `bakim-fotografi-${item.id}.jpg`);
-    } catch (reason) {
-      window.alert(reason instanceof Error ? reason.message : "Fotoğraf indirilemedi.");
-    }
+  async function downloadAllEvidence() {
+    if (!selected) return;
+    try { await apiDownload("/job-evidence-download-all", { jobId: selected.documentId }, `${selected.id}-saha-fotograflari.zip`); }
+    catch (reason) { window.alert(reason instanceof Error ? reason.message : "Fotoğraflar indirilemedi."); }
+  }
+
+  async function payCpoInvoice() {
+    if (!selected) return;
+    try { await apiRequest("/jobs-payment-cpo", { method: "POST", body: JSON.stringify({ id: selected.documentId }) }); await refreshSelected(selected.documentId); }
+    catch (reason) { window.alert(errorMessage(reason, "Ödeme yapılamadı.")); }
+  }
+
+  async function payContractor() {
+    if (!selected) return;
+    try { await apiRequest("/jobs-payment-contractor", { method: "POST", body: JSON.stringify({ id: selected.documentId }) }); await refreshSelected(selected.documentId); }
+    catch (reason) { window.alert(errorMessage(reason, "Teknik servis ödemesi yapılamadı.")); }
   }
   async function createAdditionalRequest(event: FormEvent) {
     event.preventDefault();
@@ -277,7 +283,6 @@ export function JobsPage() {
     }));
   const nextPlatformStatus: Record<string, [string, string]> = {
     MAINTENANCE_DONE: ["MAINTENANCE_APPROVED", "Bakımı onayla"],
-    CPO_APPROVAL: ["PAID", "Ödeme yapıldı / hakediş ekle"],
     PAID: ["CLOSED", "Süreci sonlandır"],
   };
 
@@ -317,15 +322,7 @@ export function JobsPage() {
           <div><small>RANDEVU</small><b>{selected.appointmentAt ? new Date(selected.appointmentAt).toLocaleString("tr-TR") : "Seçilmedi"}</b></div>
           <div><small>BAKIM HEDEFİ</small><b>{jobAssetLabel(selected)}</b></div>
         </div>
-        <section className="drawer-section">
-          <h3>Süreç ilerlemesi · çevrim {selected.workflowCycle}</h3>
-          <div className="horizontal-progress"><i style={{ width: `${((statuses.findIndex(([key]) => key === selected.status) + 1) / statuses.length) * 100}%` }} /></div>
-          <div className="flow-labels">{statuses.map(([key, label], index) => <span className={index <= statuses.findIndex(([status]) => status === selected.status) ? "done" : ""} key={key}>{label}</span>)}</div>
-          <div className={`maintenance-start-state ${selected.maintenanceStartedAt ? "done" : ""}`}>
-            <Play />
-            <span>{selected.maintenanceStartedAt ? `Saha ekibi bakıma başladı · ${new Date(selected.maintenanceStartedAt).toLocaleString("tr-TR")}` : "Saha ekibinin Bakıma Başla aksiyonu bekleniyor"}</span>
-          </div>
-        </section>
+        <JobProgressBars job={selected} requests={requests} tenantType={principal?.tenantType ?? "PLATFORM"} />
 
         {isContractor && selected.status === "ASSIGNED" && !selected.contractorAcceptedAt && <section className="drawer-section action-panel">
           <h3><CalendarClock /> Atamayı 1 gün içinde onayla</h3>
@@ -366,13 +363,13 @@ export function JobsPage() {
         </section>
 
         <section className="drawer-section">
-          <div className="section-title"><h3><Image /> Mobil saha kanıtları</h3><span>{evidence.length}/13</span></div>
+          <div className="section-title"><h3><Image /> Mobil saha kanıtları</h3>{evidence.some((item) => item.downloadAvailable) && <button className="button button--outline evidence-download-all" type="button" onClick={() => void downloadAllEvidence()}><Download /> Tümünü indir</button>}</div>
           <div className="evidence-summary">
             <EvidenceCount label="Bakım öncesi" count={evidence.filter((item) => item.phase === "BEFORE").length} target={6} />
             <EvidenceCount label="Bakım sonrası" count={evidence.filter((item) => item.phase === "AFTER").length} target={6} />
             <EvidenceCount label="Markalı tişört" count={evidence.filter((item) => item.phase === "BRANDED").length} target={1} />
           </div>
-          {evidence.length > 0 && <div className="evidence-feed">{evidence.map((item) => <article key={item.id}><Image /><div><b>{item.phase === "BEFORE" ? "Önce" : item.phase === "AFTER" ? "Sonra" : "Markalı"}</b><span>{item.description || "Açıklama yok"}</span></div>{item.downloadAvailable ? <button type="button" onClick={() => void downloadEvidence(item)}><Download /> İndir</button> : item.url ? <a href={item.url} target="_blank" rel="noreferrer">Dosya</a> : <span>Yok</span>}</article>)}</div>}
+          {evidence.length > 0 && <div className="evidence-feed">{evidence.map((item) => <article key={item.id}><Image /><div><b>{item.phase === "BEFORE" ? "Önce" : item.phase === "AFTER" ? "Sonra" : "Markalı"}</b><span>{item.description || "Açıklama yok"}</span></div></article>)}</div>}
         </section>
 
         <section className="drawer-section">
@@ -387,9 +384,9 @@ export function JobsPage() {
             </div>
             {isPlatform && item.partSupplyStatus === "PENDING_PRICING" && <div className="supply-request-action"><label><span>CPO ücreti</span><input min="1" type="number" value={requestPrices[item.id] ?? ""} onChange={(event) => setRequestPrices((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="₺" /></label><button className="button button--primary" disabled={Number(requestPrices[item.id]) <= 0} onClick={() => void priceAdditionalRequest(item)}>Fiyatlandır ve CPO'ya aktar</button></div>}
             {isCpo && item.partSupplyStatus === "AWAITING_CPO_DEADLINE" && <div className="supply-request-action"><label><span>Kesin tedarik tarihi</span><input type="datetime-local" min={toInputDate(new Date().toISOString())} value={requestDeadlines[item.id] ?? ""} onChange={(event) => setRequestDeadlines((current) => ({ ...current, [item.id]: event.target.value }))} /></label><button className="button button--primary" disabled={!requestDeadlines[item.id]} onClick={() => void setAdditionalRequestDeadline(item)}>Tarihi bildir</button></div>}
-            {(isPlatform || isCpo) && ["SUPPLY_IN_PROGRESS", "DELAYED"].includes(item.partSupplyStatus) && <div className="supply-manual-actions">{item.partSupplyStatus !== "DELAYED" && <button className="button button--outline" onClick={() => void updateAdditionalRequestStatus(item, "DELAYED")}>Gecikme bildir</button>}<button className="button button--primary" onClick={() => void updateAdditionalRequestStatus(item, "SUPPLIED")}>Temin edildi</button></div>}
+            {isCpo && ["SUPPLY_IN_PROGRESS", "DELAYED"].includes(item.partSupplyStatus) && <div className="supply-manual-actions">{item.partSupplyStatus !== "DELAYED" && <button className="button button--outline" onClick={() => void updateAdditionalRequestStatus(item, "DELAYED")}>Gecikme bildir</button>}<button className="button button--primary" onClick={() => void updateAdditionalRequestStatus(item, "SUPPLIED")}>Parça saha ekibine ulaştı</button></div>}
           </article>)}</div>
-          {isContractor && ["ASSIGNED", "IN_PROGRESS", "ADDITIONAL_SUPPLY"].includes(selected.status) && <form className="inline-request supply-create-form" onSubmit={createAdditionalRequest}><select required value={requestType} onChange={(event) => setRequestType(event.target.value)}><option value="">Tedarik türünü seçin</option>{supplyTypes.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><textarea required minLength={5} maxLength={1000} rows={3} value={requestDescription} onChange={(event) => setRequestDescription(event.target.value)} placeholder="Gereken parça veya işlemi açıklayın" /><button className="button button--primary" disabled={!requestType || requestDescription.trim().length < 5}>Bakımnerde'ye aktar</button><small>Talep önce yalnız Bakımnerde ekibine ulaşır; fiyatlandırmadan sonra CPO'ya aktarılır. Fiyat bilgisi saha ve taşeron ekranlarında gösterilmez.</small></form>}
+          {(isContractor || isPlatform) && ["ASSIGNED", "IN_PROGRESS", "ADDITIONAL_SUPPLY"].includes(selected.status) && <form className="inline-request supply-create-form" onSubmit={createAdditionalRequest}><select required value={requestType} onChange={(event) => setRequestType(event.target.value)}><option value="">Tedarik türünü seçin</option>{supplyTypes.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><textarea required minLength={5} maxLength={1000} rows={3} value={requestDescription} onChange={(event) => setRequestDescription(event.target.value)} placeholder="Gereken parça veya işlemi açıklayın" /><button className="button button--primary" disabled={!requestType || requestDescription.trim().length < 5}>Bakımnerde'ye aktar</button><small>Talep önce yalnız Bakımnerde ekibine ulaşır; fiyatlandırmadan sonra CPO'ya aktarılır. Fiyat bilgisi saha ve teknik servis ekranlarında gösterilmez.</small></form>}
         </section>
 
         {!isCpo && <section className="drawer-section job-chat">
@@ -402,6 +399,8 @@ export function JobsPage() {
           {isPlatform && <><button className="button button--outline danger-button" onClick={() => void remove(selected)}><Trash2 size={15} /> Sil</button><button className="button button--outline" onClick={() => openEdit(selected)}><Edit3 size={15} /> Ata / düzenle</button></>}
           {isPlatform && nextPlatformStatus[selected.status] && <button className="button button--primary" onClick={() => void advance(nextPlatformStatus[selected.status][0])}>{nextPlatformStatus[selected.status][1]}</button>}
           {isCpo && selected.status === "MAINTENANCE_APPROVED" && <button className="button button--primary" onClick={() => void advance("CPO_APPROVAL")}><ShieldCheck size={15} /> Bakımı CPO olarak onayla</button>}
+          {isCpo && selected.status === "CPO_APPROVAL" && !selected.cpoToPlatformPaidAt && <button className="button button--primary" onClick={() => void payCpoInvoice()}><CreditCard size={15} /> Bakımnerde ücretini öde</button>}
+          {isPlatform && selected.status === "CPO_APPROVAL" && selected.cpoToPlatformPaidAt && !selected.contractorPaidAt && <button className="button button--primary" onClick={() => void payContractor()}><CreditCard size={15} /> Teknik servis ücretini öde</button>}
         </div>
       </aside>
     </div>}
@@ -457,6 +456,50 @@ export function JobsPage() {
       </form>
     </div>}
   </>;
+}
+
+function JobProgressBars({ job, requests, tenantType }: { job: JobApi; requests: AdditionalRequest[]; tenantType: string }) {
+  const finalStatuses = ["MAINTENANCE_DONE", "MAINTENANCE_APPROVED", "CPO_APPROVAL", "PAID", "CLOSED"];
+  const platformApproved = Boolean(job.platformApprovedAt) || ["MAINTENANCE_APPROVED", "CPO_APPROVAL", "PAID", "CLOSED"].includes(job.status);
+  const cpoApproved = Boolean(job.cpoApprovedAt) || ["CPO_APPROVAL", "PAID", "CLOSED"].includes(job.status);
+  const supplyOpen = requests.some((request) => request.partSupplyStatus !== "SUPPLIED");
+  const maintenanceSteps = [
+    ["Talep oluşturuldu", true],
+    ["Teknik Servise Atandı", Boolean(job.contractorTenantId)],
+    ["Saha Personeline atandı", Boolean(job.fieldWorkerUserId)],
+    ["Bakım başladı", Boolean(job.maintenanceStartedAt)],
+    ["Bakım tamamlandı", Boolean(job.maintenanceCompletedAt) || finalStatuses.includes(job.status)],
+    ["Bakım raporu onaylandı (Bakımnerde)", platformApproved],
+    ["Bakım raporu onaylandı (CPO)", cpoApproved],
+    ["Talep Kapatıldı (Bakımnerde)", Boolean(job.closedAt) || job.status === "CLOSED"],
+  ] as Array<[string, boolean]>;
+  const priceDetermined = tenantType === "PLATFORM"
+    ? Number(job.amount ?? 0) > 0 && Number(job.contractorCost ?? 0) > 0
+    : tenantType === "CPO" ? Number(job.amount ?? 0) > 0 : Number(job.amount ?? 0) > 0;
+  const paymentSteps: Array<[string, boolean]> = [["Ücret belirlendi", priceDetermined]];
+  if (tenantType === "PLATFORM" || tenantType === "CPO") paymentSteps.push(["Ödeme Yapıldı (CPO → Bakımnerde)", Boolean(job.cpoToPlatformPaidAt)]);
+  if (tenantType === "PLATFORM" || tenantType === "CONTRACTOR") paymentSteps.push(["Ödeme Yapıldı (Bakımnerde → Teknik Servis)", Boolean(job.contractorPaidAt)]);
+  const supplySteps: Array<[string, boolean]> = requests.length === 0 ? [] : [
+    ["Talep oluşturuldu", true],
+    ["Fiyat belirlendi", requests.every((request) => request.partSupplyStatus !== "PENDING_PRICING")],
+    ["Parça teminatı son tarihi belirlendi", requests.every((request) => Boolean(request.supplyDeadlineAt))],
+    ["Parça Saha ekibine ulaştı", requests.every((request) => request.partSupplyStatus === "SUPPLIED")],
+  ];
+  return <section className="drawer-section progress-stack">
+    <ProgressTrack icon={<Wrench />} title="Bakım durumu" badge={supplyOpen ? "Ek Tedarik" : undefined} steps={maintenanceSteps} />
+    <ProgressTrack icon={<CreditCard />} title="Ödeme durumu" steps={paymentSteps} />
+    {supplySteps.length > 0 && <ProgressTrack icon={<PackageCheck />} title="Ek Tedarik durumu" steps={supplySteps} />}
+  </section>;
+}
+
+function ProgressTrack({ icon, title, badge, steps }: { icon: ReactNode; title: string; badge?: string; steps: Array<[string, boolean]> }) {
+  const completed = steps.filter(([, done]) => done).length;
+  const percent = Math.round((completed / steps.length) * 100);
+  return <div className="job-progress-track">
+    <div className="job-progress-track__head"><span>{icon}</span><b>{title}</b>{badge && <em>{badge}</em>}<strong>{percent}/100</strong></div>
+    <div className="horizontal-progress"><i style={{ width: `${percent}%` }} /></div>
+    <div className="job-progress-steps">{steps.map(([label, done]) => <span className={done ? "done" : ""} key={label}><i />{label}</span>)}</div>
+  </div>;
 }
 
 function EvidenceCount({ label, count, target }: { label: string; count: number; target: number }) {

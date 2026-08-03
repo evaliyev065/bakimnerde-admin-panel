@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, ShieldCheck, Wrench } from "lucide-react";
+import { ArrowRight, ShieldCheck, Wrench } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -35,7 +35,7 @@ export function PlatformLoginPage() {
         <p className="eyebrow">BAKIMNERDE GİRİŞİ</p>
         <h2>Yetkili personel girişi</h2>
         <p>Bakımnerde merkez hesabınızı kullanın.</p>
-        <div className="platform-login-notice"><CheckCircle2 /><span>Bu adres yalnız Bakımnerde ekibine özeldir.</span></div>
+
         <label><span>E-posta adresi</span><input type="email" value={email} onChange={event => setEmail(event.target.value)} required /></label>
         <label><span>Parola</span><input type="password" value={password} onChange={event => setPassword(event.target.value)} required /></label>
         {error && <div className="login-error">{error}</div>}

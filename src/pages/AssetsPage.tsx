@@ -54,7 +54,7 @@ export function AssetsPage() {
   const selectedSubtitle = selectedDevice ? `${selectedDevice.model} · ${selectedDevice.station.name}` : selectedStation ? `${selectedStation.city} / ${selectedStation.district} · ${selectedStation.deviceCount} cihaz` : "";
 
   return <>
-    <PageHeader eyebrow="VARLIK YÖNETİMİ" title="Cihazlar ve İstasyonlar" description="İstasyonları, yalnız o istasyona bağlı cihazları ve iki bakım türünün geçmişini görüntüleyin." />
+    <PageHeader eyebrow="" title="Cihazlar ve İstasyonlar" description="İstasyonları, yalnız o istasyona bağlı cihazları ve iki bakım türünün geçmişini görüntüleyin." />
     <div className="toolbar asset-toolbar">
       <label><span>İstasyon</span><select value={stationFilter} onChange={(event) => setStationFilter(event.target.value)}><option value="ALL">Tüm istasyonlar</option>{stations.map((station) => <option key={station.id} value={station.id}>{station.name} · {station.city}/{station.district}</option>)}</select></label>
       <label className="table-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cihaz, model veya istasyon ara" /></label>

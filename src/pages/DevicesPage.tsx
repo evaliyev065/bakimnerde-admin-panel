@@ -67,7 +67,7 @@ export function DevicesPage() {
   }
 
   return <>
-    <PageHeader eyebrow="VARLIK YÖNETİMİ" title="Cihazlar" description="Şarj cihazlarını ve cihaz bazlı bakım geçmişini tek ekranda görüntüleyin." />
+    <PageHeader eyebrow="" title="Cihazlar" description="Şarj cihazlarını ve cihaz bazlı bakım geçmişini tek ekranda görüntüleyin." />
     <div className="toolbar">
       <label className="table-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cihaz, model veya istasyon ara" /></label>
       <button className="button button--outline" onClick={() => void load()}><RefreshCw size={15} /> Yenile</button>

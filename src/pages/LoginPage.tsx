@@ -5,8 +5,8 @@ import { useAuth } from "../auth/AuthContext";
 import { Brand } from "../shared/components/Brand";
 
 const demos = [
-  { label: "CPO firma", email: "operasyon@voltgo.test", icon: Building2 },
-  { label: "Taşeron yönetimi", email: "yonetici@marmarateknik.test", icon: HardHat },
+  { label: "CPO firma", email: "operasyon@wattarya.test", icon: Building2 },
+  { label: "Taşeron yönetimi", email: "yonetici@wattaryateknik.test", icon: HardHat },
 ] as const;
 
 export function LoginPage() {
