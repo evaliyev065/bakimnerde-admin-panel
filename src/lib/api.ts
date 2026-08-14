@@ -1,6 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:3000";
 
 interface ApiEnvelope<T> { data: T }
+interface ApiErrorBody { code?: string; message?: string }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = sessionStorage.getItem("bakimnerde_token");
@@ -12,8 +13,8 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
       ...options.headers,
     },
   });
-  const body = await response.json() as ApiEnvelope<T> & { error?: { message?: string } };
-  if (!response.ok) throw new Error(body.error?.message ?? "İşlem tamamlanamadı.");
+  const body = await response.json() as ApiEnvelope<T> & { error?: ApiErrorBody };
+  if (!response.ok) throw new Error(localizedError(body.error, "İşlem tamamlanamadı.", "The operation could not be completed."));
   return body.data;
 }
 
@@ -28,8 +29,8 @@ export async function apiDownload(path: string, payload: Record<string, unknown>
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
-    const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
-    throw new Error(body?.error?.message ?? "Dosya indirilemedi.");
+    const body = await response.json().catch(() => null) as { error?: ApiErrorBody } | null;
+    throw new Error(localizedError(body?.error, "Dosya indirilemedi.", "The file could not be downloaded."));
   }
   const objectUrl = URL.createObjectURL(await response.blob());
   const anchor = document.createElement("a");
@@ -39,4 +40,9 @@ export async function apiDownload(path: string, payload: Record<string, unknown>
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(objectUrl);
+}
+
+function localizedError(error: ApiErrorBody | undefined, turkishFallback: string, englishFallback: string): string {
+  if (document.documentElement.lang !== "en") return error?.message ?? turkishFallback;
+  return error?.code ? `${englishFallback} (${error.code})` : englishFallback;
 }

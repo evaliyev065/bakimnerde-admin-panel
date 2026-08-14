@@ -1,3 +1,5 @@
+import { usePreferences } from "../../app/PreferencesContext";
+
 const labels = {
   waiting: "Beklemede",
   assigned: "Atandı",
@@ -16,5 +18,6 @@ const labels = {
 export type Status = keyof typeof labels;
 
 export function StatusBadge({ status }: { status: Status }) {
-  return <span className={`status status--${status}`}><i />{labels[status]}</span>;
+  const { t } = usePreferences();
+  return <span className={`status status--${status}`}><i />{t(labels[status])}</span>;
 }

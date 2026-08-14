@@ -18,6 +18,6 @@ export const navigation = [
   { label: "Taşeron firmalar", to: "/contractors", icon: Handshake },
   { label: "CPO firmalar", to: "/cpo-companies", icon: Building2 },
   { label: "Fiyat yönetimi", to: "/pricing", icon: BadgeDollarSign },
-  { label: "Cüzdan", to: "/wallet", icon: WalletCards },
+  { label: "Ödemeler", to: "/wallet", icon: WalletCards },
   { label: "Denetim kayıtları", to: "/audit-logs", icon: ScrollText },
 ] as const;

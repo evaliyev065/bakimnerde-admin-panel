@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { usePreferences } from "./PreferencesContext";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../layouts/AppShell";
 import { BalancesPage } from "../pages/BalancesPage";
@@ -30,6 +31,7 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="jobs" element={<JobsPage />} />
+        <Route path="job-details/:jobId" element={<JobsPage />} />
         <Route path="assets" element={<PlatformOrCpo><AssetsPage /></PlatformOrCpo>} />
         <Route path="account" element={<AccountPage />} />
         <Route path="users" element={<UserManagementPage />} />
@@ -40,7 +42,6 @@ export function App() {
         <Route path="audit-logs" element={<PlatformOnly><AuditLogsPage /></PlatformOnly>} />
       </Route>
       <Route path="giris" element={<Navigate to="/login" replace />} />
-      <Route path="auth/admin/login" element={<Navigate to="/admin/login" replace />} />
       <Route path="isler" element={<Navigate to="/jobs" replace />} />
       <Route path="devices" element={<Navigate to="/assets" replace />} />
       <Route path="kullanicilar" element={<Navigate to="/users" replace />} />
@@ -67,6 +68,7 @@ function PlatformOrCpo({ children }: { children: React.ReactNode }) {
 
 function RequireAuth() {
   const { principal, loading } = useAuth();
-  if (loading) return <div className="app-loading"><span /><p>Güvenli oturum kontrol ediliyor…</p></div>;
+  const { language } = usePreferences();
+  if (loading) return <div className="app-loading"><span /><p>{language === "tr" ? "Güvenli oturum kontrol ediliyor…" : "Checking your secure session…"}</p></div>;
   return principal ? <AppShell /> : <Navigate to="/login" replace />;
 }
